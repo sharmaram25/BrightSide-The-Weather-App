@@ -1,0 +1,7 @@
+{
+  "name": "BrightSide",
+  "description": "A visually immersive, sensory weather experience that tells the story of the sky through motion and data.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

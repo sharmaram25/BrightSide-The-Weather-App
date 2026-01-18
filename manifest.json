@@ -1,0 +1,22 @@
+{
+  "short_name": "BrightSide",
+  "name": "BrightSide Weather",
+  "icons": [
+    {
+      "src": "https://img.icons8.com/fluency/192/partly-cloudy-day.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://img.icons8.com/fluency/512/partly-cloudy-day.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#0f172a",
+  "background_color": "#0f172a",
+  "orientation": "portrait"
+}
