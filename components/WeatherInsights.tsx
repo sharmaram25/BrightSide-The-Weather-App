@@ -1,90 +1,103 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { WeatherData, AirQualityData } from '../types';
-import { Sparkles, Umbrella, ThermometerSun, Wind, AlertTriangle, Leaf } from 'lucide-react';
+import { AlertTriangle, CloudLightning, CloudRain, Flame, Snowflake, Sun, Wind, CloudFog, Leaf, Umbrella, Shirt, SunMedium, Glasses, GlassWater, ShieldPlus, Sparkles } from 'lucide-react';
+import { Forecast, Settings } from '../lib/model';
+import { alerts, essentials, AlertKind, EssentialId } from '../lib/insights';
+import { Card } from './ui';
 
 interface WeatherInsightsProps {
-  weather: WeatherData;
-  aqi: AirQualityData | null;
+  data: Forecast;
+  settings: Settings;
 }
 
-const getAQILabel = (aqi: number) => {
-  switch (aqi) {
-    case 1: return { label: 'Good', color: 'bg-green-400', desc: 'Enjoy the outdoors!' };
-    case 2: return { label: 'Fair', color: 'bg-yellow-400', desc: 'Moderate air quality.' };
-    case 3: return { label: 'Moderate', color: 'bg-orange-400', desc: 'Sensitive groups should be careful.' };
-    case 4: return { label: 'Poor', color: 'bg-red-400', desc: 'Avoid prolonged exertion.' };
-    case 5: return { label: 'Very Poor', color: 'bg-purple-500', desc: 'Stay indoors if possible.' };
-    default: return { label: 'Unknown', color: 'bg-gray-400', desc: '--' };
-  }
+const ALERT_ICON: Record<AlertKind, React.ElementType> = {
+  heat: Flame,
+  uv: Sun,
+  wind: Wind,
+  rain: CloudRain,
+  storm: CloudLightning,
+  cold: Snowflake,
+  fog: CloudFog,
+  air: Leaf,
 };
 
-const getTips = (weather: WeatherData): { icon: React.ReactNode, text: string } => {
-  const temp = weather.main.temp;
-  const main = weather.weather[0].main.toLowerCase();
-  const id = weather.weather[0].id;
-
-  if (id >= 200 && id < 600) return { icon: <Umbrella className="text-blue-300" />, text: "It's raining. Don't forget your umbrella." };
-  if (temp > 35) return { icon: <ThermometerSun className="text-red-300" />, text: "Extreme heat! Stay hydrated & avoid direct sun." };
-  if (temp > 28) return { icon: <ThermometerSun className="text-orange-300" />, text: "It's hot outside. Wear sunscreen." };
-  if (temp < 10) return { icon: <Wind className="text-cyan-200" />, text: "It's chilly. Wear a warm jacket." };
-  if (temp < 5) return { icon: <AlertTriangle className="text-blue-200" />, text: "Freezing conditions. Layer up properly." };
-  if (main.includes('clear')) return { icon: <Sparkles className="text-yellow-300" />, text: "Perfect weather for a walk." };
-  
-  return { icon: <Sparkles className="text-white/80" />, text: "Have a wonderful day!" };
+const ESSENTIAL_ICON: Record<EssentialId, React.ElementType> = {
+  umbrella: Umbrella,
+  jacket: Shirt,
+  sunscreen: SunMedium,
+  sunglasses: Glasses,
+  water: GlassWater,
+  mask: ShieldPlus,
 };
 
-const WeatherInsights: React.FC<WeatherInsightsProps> = ({ weather, aqi }) => {
-  const tip = getTips(weather);
-  const aqiValue = aqi?.list[0].main.aqi || 0;
-  const aqiInfo = getAQILabel(aqiValue);
+const LEVEL = {
+  severe: { ring: 'from-rose-500/35 to-rose-500/5', icon: 'bg-rose-500/25 text-rose-200' },
+  warn: { ring: 'from-amber-400/30 to-amber-400/5', icon: 'bg-amber-400/20 text-amber-200' },
+  info: { ring: 'from-sky-400/25 to-sky-400/5', icon: 'bg-sky-400/20 text-sky-200' },
+};
+
+/** Weather alerts derived from the forecast + "what to bring today". */
+const WeatherInsights: React.FC<WeatherInsightsProps> = ({ data, settings }) => {
+  const list = useMemo(() => alerts(data, settings), [data, settings]);
+  const kit = useMemo(() => essentials(data), [data]);
+  const active = kit.filter((k) => k.active);
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.5 }}
-      className="w-full h-full flex flex-col gap-4"
-    >
-      {/* Smart Tip Card */}
-      <motion.div 
-        whileHover={{ scale: 1.02, borderColor: 'rgba(255,255,255,0.4)' }}
-        className="glass-panel p-5 rounded-3xl flex items-center space-x-4 flex-1 cursor-default transition-colors"
-      >
-        <div className="p-3 bg-white/10 rounded-full">
-            {tip.icon}
-        </div>
-        <div>
-            <h4 className="text-xs uppercase font-bold text-white/60 tracking-wider mb-1">BrightSide Tip</h4>
-            <p className="text-lg font-medium leading-tight">{tip.text}</p>
-        </div>
-      </motion.div>
-
-      {/* AQI Card */}
-      {aqi && (
-        <motion.div 
-            whileHover={{ scale: 1.02, borderColor: 'rgba(255,255,255,0.4)' }}
-            className="glass-panel p-5 rounded-3xl flex items-center justify-between relative overflow-hidden flex-1 cursor-default transition-colors"
-        >
-             {/* Background glow based on AQI */}
-            <div className={`absolute -right-10 -top-10 w-32 h-32 rounded-full blur-3xl opacity-20 ${aqiInfo.color}`}></div>
-            
-            <div className="flex items-center space-x-4 z-10">
-                <div className={`p-3 rounded-full bg-white/10`}>
-                    <Leaf className={`h-6 w-6 ${aqiValue > 3 ? 'text-red-300' : 'text-green-300'}`} />
-                </div>
-                <div>
-                    <h4 className="text-xs uppercase font-bold text-white/60 tracking-wider mb-1">Air Quality</h4>
-                    <p className="text-lg font-medium leading-tight">{aqiInfo.label} <span className="text-sm font-normal opacity-70">- {aqiInfo.desc}</span></p>
-                </div>
-            </div>
-             <div className="text-3xl font-bold opacity-10 z-10 font-mono tracking-tighter">
-                AQI
-             </div>
-        </motion.div>
+    <>
+      {list.length > 0 && (
+        <Card title="Heads up" icon={<AlertTriangle size={13} />} right={list.length > 1 ? `${list.length} alerts` : undefined}>
+          <div className="space-y-2">
+            {list.map((a, i) => {
+              const Icon = ALERT_ICON[a.id];
+              const lv = LEVEL[a.level];
+              return (
+                <motion.div
+                  key={a.id}
+                  initial={{ opacity: 0, x: -12 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.08 + i * 0.07 }}
+                  className={`flex items-start gap-3 rounded-2xl bg-gradient-to-r ${lv.ring} p-3`}
+                >
+                  <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${lv.icon}`}>
+                    <Icon size={18} />
+                  </div>
+                  <div>
+                    <div className="text-[15px] font-semibold">{a.title}</div>
+                    <div className="text-[13px] leading-snug text-white/70">{a.detail}</div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </Card>
       )}
-    </motion.div>
+
+      <Card title="Bring today" icon={<Sparkles size={13} />} right={active.length ? undefined : 'Travel light'}>
+        <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4" onPointerDown={(e) => e.stopPropagation()}>
+          {kit.map((k, i) => {
+            const Icon = ESSENTIAL_ICON[k.id];
+            return (
+              <motion.div
+                key={k.id}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+                className={`flex min-w-[84px] flex-col items-center rounded-2xl px-2.5 py-3 text-center transition-colors ${k.active ? 'bg-white/[0.14]' : 'bg-white/[0.04]'}`}
+              >
+                <div className={`mb-1.5 grid h-10 w-10 place-items-center rounded-full ${k.active ? 'bg-white text-slate-900 shadow-[0_6px_20px_-6px_rgba(255,255,255,0.6)]' : 'bg-white/10 text-white/40'}`}>
+                  <Icon size={19} />
+                </div>
+                <div className={`text-[13px] font-semibold ${k.active ? '' : 'text-white/45'}`}>{k.label}</div>
+                <div className={`text-[11px] ${k.active ? 'text-white/70' : 'text-white/35'}`}>{k.note}</div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </Card>
+    </>
   );
 };
 
-export default WeatherInsights;
+export default React.memo(WeatherInsights);

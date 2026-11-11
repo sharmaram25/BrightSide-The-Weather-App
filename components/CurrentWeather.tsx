@@ -1,68 +1,74 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { WeatherData } from '../types';
-import { MapPin, ArrowUp, ArrowDown } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import { Navigation } from 'lucide-react';
+import { Forecast, Place, Settings } from '../lib/model';
+import { fmtDate, fmtTemp, fmtTime, toTemp } from '../lib/format';
+import { headline } from '../lib/insights';
+import { AnimatedNumber, EASE_OUT } from './ui';
+import WeatherIcon from './WeatherIcon';
 
-interface CurrentWeatherProps {
-  data: WeatherData;
+interface Props {
+  data: Forecast;
+  place: Place;
+  isCurrent: boolean;
+  settings: Settings;
 }
 
-const CurrentWeather: React.FC<CurrentWeatherProps> = ({ data }) => {
-  const { main, weather, name, sys } = data;
-  const currentTemp = Math.round(main.temp);
-  const condition = weather[0].description;
-  const high = Math.round(main.temp_max);
-  const low = Math.round(main.temp_min);
+const CurrentWeather: React.FC<Props> = ({ data, place, isCurrent, settings }) => {
+  const { current, daily, offset } = data;
+  const today = daily[0];
+  const { scrollY } = useScroll();
+  const opacity = useTransform(scrollY, [0, 220], [1, 0], { clamp: true });
+  const scale = useTransform(scrollY, [0, 220], [1, 0.94], { clamp: true });
+  const y = useTransform(scrollY, [0, 220], [0, 40], { clamp: true });
+
+  const now = Date.now() / 1000;
+  const deviceOffset = -new Date().getTimezoneOffset() * 60;
+  const showLocalTime = Math.abs(deviceOffset - offset) >= 1800;
+  const summary = useMemo(() => headline(data, settings), [data, settings]);
+
+  // transform + opacity only: both run on the compositor
+  const item = (i: number) => ({
+    initial: { opacity: 0, y: 12 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.6, ease: EASE_OUT, delay: 0.04 + i * 0.06 },
+  });
 
   return (
-    <div className="flex flex-col items-center justify-center py-4 md:py-8 text-white text-center relative mb-6">
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center space-x-2 mb-2 bg-white/10 px-4 py-1.5 rounded-full backdrop-blur-md border border-white/10 hover:bg-white/15 transition-colors cursor-default"
-      >
-        <MapPin size={14} className="text-white/80" />
-        <span className="text-xs font-bold tracking-widest uppercase text-white/90">{name}, {sys.country}</span>
+    <motion.section style={{ opacity, scale, y }} className="flex flex-col items-center px-6 pt-6 pb-8 text-center text-soft-shadow will-change-transform">
+      <motion.div {...item(0)} className="flex items-center gap-1.5 text-[26px] font-semibold tracking-tight">
+        {isCurrent && <Navigation size={15} className="fill-white/80 text-white/80" />}
+        <h1 className="max-w-[78vw] truncate">{place.name}</h1>
+      </motion.div>
+      <motion.p {...item(1)} className="mt-0.5 text-[13px] font-medium text-white/60">
+        {isCurrent ? 'My Location' : fmtDate(now, offset)}
+        {showLocalTime && ` · ${fmtTime(now, offset, settings)} local`}
+      </motion.p>
+
+      <motion.div {...item(2)} className="relative mt-1 flex items-start justify-center">
+        <span className="hero-temp tnum text-[124px] leading-[1.02] md:text-[150px]">
+          <AnimatedNumber value={Math.round(toTemp(current.temp, settings))} />
+        </span>
+        <span className="hero-temp mt-3 text-[72px] leading-none md:text-[88px]">°</span>
       </motion.div>
 
-      <motion.div
-        key={currentTemp} 
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 100, damping: 20 }}
-        className="relative"
-      >
-        <h1 className="text-[8rem] md:text-[10rem] lg:text-[12rem] font-bold tracking-tighter text-shadow leading-none bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
-          {currentTemp}°
-        </h1>
+      <motion.div {...item(3)} className="-mt-1 flex items-center gap-2 text-[19px] font-medium text-white/90">
+        <WeatherIcon kind={current.condition.kind} isDay={current.condition.isDay} size={30} animated />
+        {current.condition.label}
       </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="flex flex-col items-center mt-2"
-      >
-        <p className="text-xl md:text-2xl font-light capitalize opacity-90 mb-4 tracking-wide">{condition}</p>
-        
-        <div className="flex items-center space-x-8 text-base md:text-lg font-medium bg-black/10 px-6 py-2 rounded-2xl backdrop-blur-sm border border-white/5">
-          <div className="flex items-center space-x-1.5">
-            <div className="p-1 rounded-full bg-red-500/20">
-                <ArrowUp size={14} className="text-red-300" />
-            </div>
-            <span>{high}°</span>
-          </div>
-          <div className="w-px h-4 bg-white/20"></div>
-          <div className="flex items-center space-x-1.5">
-             <div className="p-1 rounded-full bg-blue-500/20">
-                <ArrowDown size={14} className="text-blue-300" />
-             </div>
-            <span>{low}°</span>
-          </div>
-        </div>
+      <motion.div {...item(4)} className="tnum mt-1.5 flex items-center gap-3 text-[15px] font-medium text-white/75">
+        <span>H: {fmtTemp(today?.tMax ?? current.temp, settings)}</span>
+        <span>L: {fmtTemp(today?.tMin ?? current.temp, settings)}</span>
+        <span className="h-3.5 w-px bg-white/25" />
+        <span>Feels {fmtTemp(current.feelsLike, settings)}</span>
       </motion.div>
-    </div>
+
+      <motion.p {...item(5)} className="mt-5 max-w-sm text-[15px] leading-snug text-white/85">
+        {summary}
+      </motion.p>
+    </motion.section>
   );
 };
 
-export default CurrentWeather;
+export default React.memo(CurrentWeather);

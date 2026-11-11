@@ -141,3 +141,42 @@ export interface DailyForecastSummary {
   pop: number; // Max probability of precipitation
   weather: WeatherCondition;
 }
+// ---------------------------------------------------------------------------
+// Additions for BrightSide v4
+// ---------------------------------------------------------------------------
+
+/** OpenWeather Geocoding API (/geo/1.0/direct and /geo/1.0/reverse) result */
+export interface GeoResult {
+  name: string;
+  local_names?: Record<string, string>;
+  lat: number;
+  lon: number;
+  country: string;
+  state?: string;
+}
+
+/**
+ * Optional keyless enrichment from Open-Meteo, used only for data the
+ * OpenWeather free tier does not provide (UV index, days 6-10, 15-min nowcast).
+ * Times are unix seconds.
+ */
+export interface ExtrasData {
+  utc_offset_seconds: number;
+  current?: { time: number; uv_index: number | null };
+  hourly?: { time: number[]; uv_index: (number | null)[] };
+  daily?: {
+    time: number[];
+    weather_code: number[];
+    temperature_2m_max: number[];
+    temperature_2m_min: number[];
+    uv_index_max: (number | null)[];
+    precipitation_sum: (number | null)[];
+    precipitation_probability_max: (number | null)[];
+    wind_speed_10m_max: (number | null)[];
+    wind_gusts_10m_max: (number | null)[];
+    wind_direction_10m_dominant: (number | null)[];
+    sunrise: number[];
+    sunset: number[];
+  };
+  minutely_15?: { time: number[]; precipitation: (number | null)[] };
+}

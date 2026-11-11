@@ -10,6 +10,28 @@
 
 ---
 
+## ✨ What's new in v4
+
+- **Living sky** — canvas engine with drifting clouds, layered rain, snow, fog, lightning, twinkling stars, shooting stars, a sun glow that tracks the real solar position, and the moon drawn in its actual phase. Scroll parallax; pauses when hidden.
+- **Swipe between saved cities**, reorderable locations list with live mini-previews, city search with autocomplete (OpenWeather Geocoding), automatic "My Location".
+- **Forecasts** — hourly timeline (temp curve / rain / wind / UV) with inline sunrise & sunset, 10-day outlook with temperature-range bars, tap any day for a detail sheet.
+- **Insights** — plain-language headline, smart alerts (heat, storms, wind, UV, freezing, fog, air quality), "Bring today" essentials, activity scores with best times (running, cycling, outdoors, laundry, stargazing, golden hour).
+- **Detail tiles** — air quality with 24h forecast & pollutants, UV, wind compass, feels-like, humidity & dew point, visibility, pressure gauge & trend, precipitation, cloud base, real solar-altitude sun path, moon phase.
+- **PWA** — installable, offline cache (last data shown instantly), pull-to-refresh, haptics, safe-area aware, bottom-sheet UI, unit & time-format settings, Lite effects mode for older phones.
+
+Data: OpenWeather (primary, `VITE_OPENWEATHER_API_KEY`). UV index, days 6–10 and the 15-minute rain nowcast come from the keyless [Open-Meteo](https://open-meteo.com/) API and fail silently if unavailable.
+
+### Run locally
+
+```bash
+npm install
+npm run dev        # http://localhost:3000
+npm run dev:phone  # HTTPS on your Wi-Fi so location works on a phone (accept the self-signed certificate)
+npm run build      # production build incl. service worker
+```
+
+---
+
 ## 🔮 The Experience
 
 **BrightSide** is a modern weather app that combines real-time OpenWeather data with high-fidelity procedural visuals.
